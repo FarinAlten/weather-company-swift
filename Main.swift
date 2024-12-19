@@ -1,6 +1,4 @@
 import SwiftUI
-import CoreData
-import SwiftData
 
 @main
 struct WeatherApp: App {
@@ -23,6 +21,16 @@ protocol WeatherDataProtocol {
     var rainAmount: String { get }
 }
 
+protocol WeatherStationInfo {
+    var id: UUID { get }
+    var Name: String { get }
+    var temperature: String { get }
+    var humidity: String { get }
+    var windSpeed: String { get }
+    var rainAmount: String { get }
+    var collectedwater: String { get }
+}
+
 struct WeatherData: Identifiable, WeatherDataProtocol {
     let id = UUID()
     let city: String
@@ -32,131 +40,114 @@ struct WeatherData: Identifiable, WeatherDataProtocol {
     let rainAmount: String
 }
 
+struct WeatherStationInformation: Identifiable, WeatherStationInfo {
+    let id = UUID()
+    let Name: String
+    let temperature: String
+    let humidity: String
+    let windSpeed: String
+    let rainAmount: String
+    let collectedwater: String
+}
+
+
 class AppSettings: ObservableObject {
-    @Published var accentColor: Color = .accentColor
+    @Published var accentColor: Color = .blue 
     @Published var temperatureUnit: String = "Celsius"
     @Published var capitalCity: String? = nil
     @Published var cities: [WeatherData] = []
+    @Published var currentStation: WeatherStationInformation? = WeatherStationInformation(
+        Name: "Lokation: Bünde",
+        temperature: "8°C",
+        humidity: "60%",
+        windSpeed: "15 km/h",
+        rainAmount: "0 mm",
+        collectedwater: "20 L"
+    )
+    @Published var stationname: String = ""
 }
 
-struct SettingsView: View {
+
+struct AccentColorSelectionView: View {
     @EnvironmentObject var appSettings: AppSettings
     @Environment(\.dismiss) var dismiss
-    @State private var name: String = ""
+    
+
+    let accentColors: [Color] = [
+        .blue, .green, .red, .orange, .purple, .pink
+    ]
     
     var body: some View {
         NavigationView {
-            Form {
-                Section(header: Text("Personalisierung")) {
-                    ColorPicker("Akzentfarbe", selection: $appSettings.accentColor)
-                    
-                    Picker("Einheit", selection: $appSettings.temperatureUnit) {
-                        Text("Celsius").tag("Celsius")
-                        Text("Fahrenheit").tag("Fahrenheit")
-                    }
-                }
-                Section(header: Text("Wetterstation")) {
-                    HStack {
-                        Text("Akkustand")
-                        Text("87%").foregroundColor(.secondary)
-                    }
-                    HStack {
-                        Text("Update Status")
-                        Spacer()
-                        Text("Kein Update verfügbar 😀").foregroundColor(.secondary)
-                    }
-                    HStack {
-                        Text("Stationsname")
-                        Spacer()
-                        TextField("Geben Sie Ihren Namen ein", text: $name)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                    }
-                }
-                
-                if !appSettings.cities.isEmpty {
-                    Section(header: Text("Hauptstadt")) {
-                        Picker("Hauptstadt", selection: $appSettings.capitalCity) {
-                            ForEach(appSettings.cities, id: \.id) { city in
-                                Text(city.city).tag(city.city as String?)
-                            }
+            VStack {
+                List(accentColors, id: \.self) { color in
+                    Button(action: {
+                        appSettings.accentColor = color
+                        dismiss()  
+                    }) {
+                        HStack {
+                            Circle()
+                                .fill(color)
+                                .frame(width: 30, height: 30)
+                            Text(color.description.capitalized)
+                                .foregroundColor(.primary)
                         }
                     }
                 }
-                
-                Section(header: Text("Info")) {
-                    Text("Version: 1.0.0 Beta")
-                    Text("Entwickler: Weatherstation Company 🌦️")
-                }
             }
-            .navigationTitle("Einstellungen")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Schließen") {
-                        dismiss()
-                    }
-                }
+            .navigationTitle("Akzentfarbe")
             }
-        }
     }
 }
-
 struct AddCityView: View {
-    @Binding var cities: [WeatherData]
+    @Binding var citieindex: [WeatherData]
+    @Binding var WeatherStation: [WeatherStationInformation]
     @Environment(\.dismiss) var dismiss
     @State private var searchText = ""
     
-    let allCities = [
+    let CitieIndex = [
         WeatherData(city: "Berlin", temperature: "5°C", humidity: "70%", windSpeed: "10 km/h", rainAmount: "0 mm"),
         WeatherData(city: "Hamburg", temperature: "4°C", humidity: "75%", windSpeed: "12 km/h", rainAmount: "0.2 mm"),
         WeatherData(city: "München", temperature: "4°C", humidity: "53%", windSpeed: "8 km/h", rainAmount: "4 mm"),
         WeatherData(city: "Bremen", temperature: "3°C", humidity: "45%", windSpeed: "12 km/h", rainAmount: "4 mm"),
         WeatherData(city: "Köln", temperature: "6°C", humidity: "65%", windSpeed: "14 km/h", rainAmount: "0.1 mm"),
-        WeatherData(city: "Bünde", temperature: "8°C", humidity: "62%", windSpeed: "13 km/h", rainAmount: "0.2 mm"), 
-        WeatherData(city: "Zürich", temperature: "3°C", humidity: "47%", windSpeed: "7 km/h", rainAmount: "3.7 mm"), 
-        WeatherData(city: "Bern", temperature: "4°C", humidity: "49%", windSpeed: "5 km/h", rainAmount:"2.1 mm"), 
-        WeatherData(city:"Stuttgart",temperature:"3°C",humidity:"51%",windSpeed:"4 km/h",rainAmount:"1.2 mm"),
-        WeatherData(city:"Osnabrück",temperature:"6°C",humidity:"52%",windSpeed:"3 km/h",rainAmount:"7.2 mm"), 
-        WeatherData(city:"Herford",temperature:"3,4°C",humidity:"51%",windSpeed:"4 km/h",rainAmount:"2.3 mm"), 
-        WeatherData(city:"Minden",temperature:"5°C",humidity:"51%",windSpeed:"4 km/h",rainAmount:"2.3 mm"), 
-        WeatherData(city:"Bielefeld",temperature:"5°C",humidity:"51%",windSpeed:"5 km/h",rainAmount:"3.1 mm"), 
-        WeatherData(city:"Paderborn",temperature:"6°C",humidity:"52%",windSpeed:"6 km/h",rainAmount:"4.2 mm"), 
-        
+        WeatherData(city: "Bünde", temperature: "8°C", humidity: "62%", windSpeed: "13 km/h", rainAmount: "0.2 mm")
     ]
     
-    var filteredCities:[WeatherData]{
-        if searchText.isEmpty{
-            return allCities
-        }else{
-            return allCities.filter{ $0.city.localizedCaseInsensitiveContains(searchText)}
+    var filteredCities: [WeatherData] {
+        if searchText.isEmpty {
+            return CitieIndex
+        } else {
+            return CitieIndex.filter { $0.city.localizedCaseInsensitiveContains(searchText) }
         }
     }
     
-    var body : some View{
-        NavigationView{
-            VStack{
-                List(filteredCities,id:\.id){ city in 
-                    Button(action:{
-                        if !cities.contains(where:{ $0.city==city.city}){
-                            cities.append(city)
+    var body: some View {
+        NavigationView {
+            VStack {
+                List(filteredCities, id: \.id) { city in
+                    Button(action: {
+                        if !citieindex.contains(where: { $0.city == city.city }) {
+                            citieindex.append(city)
                         }
                         dismiss()
-                    }){
+                    }) {
                         Text(city.city).foregroundColor(.blue)
                     }
                 }
-                .searchable(text:$searchText,prompt :Text ("Stadt suchen..."))
+                .searchable(text: $searchText, prompt: Text("Stadt suchen..."))
             }
-            .navigationBarTitle ("Städte hinzufügen" ,displayMode:.inline)
-            .toolbar{
-                ToolbarItem(placement:.navigationBarTrailing){
-                    Button(action:{ dismiss()}){
-                        Image(systemName:"xmark").foregroundColor(.accentColor)
+            .navigationBarTitle("Städte hinzufügen", displayMode: .inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark").foregroundColor(.accentColor)
                     }
                 }
             }
-            .scrollDismissesKeyboard(/*@START_MENU_TOKEN@*/.immediately/*@END_MENU_TOKEN@*/)
+            .scrollDismissesKeyboard(.immediately)
         }
-    }   
+    }
 }
 
 struct ContentView: View {
@@ -164,7 +155,7 @@ struct ContentView: View {
     @State private var showAddCityView = false
     @State private var showSettings = false
     @State private var selectedCityIndex = 0
-    @State private var showAlert = false
+    @State private var showAlert = true 
     
     var body: some View {
         NavigationView {
@@ -173,54 +164,49 @@ struct ContentView: View {
                     .ignoresSafeArea()
                 
                 VStack {
-                    if appSettings.cities.isEmpty {
-                        Text("Aktuell keine Städte hier")
-                            .font(.title2)
-                            .foregroundColor(.white)
-                            .padding()
-                            .onAppear {
-                                showAlert = true
-                            }
-                    } else {
-                        TabView(selection: $selectedCityIndex) {
-                            ForEach(appSettings.cities.indices, id: \.self) { index in
-                                ScrollView {
-                                    VStack(spacing: 16) {
-                                        weatherTab(
-                                            title: "Stadt",
-                                            icon: "building.2.fill",
-                                            content: appSettings.cities[index].city
-                                        )
-                                        weatherTab(
-                                            title: "Temperatur",
-                                            icon: "thermometer.sun.fill",
-                                            content: formatTemperature(appSettings.cities[index].temperature)
-                                        )
-                                        weatherTab(
-                                            title: "Luftfeuchtigkeit",
-                                            icon: "humidity.fill",
-                                            content: appSettings.cities[index].humidity
-                                        )
-                                        weatherTab(
-                                            title: "Windgeschwindigkeit",
-                                            icon: "wind",
-                                            content: appSettings.cities[index].windSpeed
-                                        )
-                                        weatherTab(
-                                            title: "Niederschlag",
-                                            icon: "cloud.rain.fill",
-                                            content: appSettings.cities[index].rainAmount
-                                        )
-                                    }
-                                    .padding()
-                                }
-                                .tag(index)
-                            }
+                    ScrollView {
+                        let currentStation = appSettings.currentStation ?? WeatherStationInformation(
+                            Name: "Keine Station",
+                            temperature: "0°C",
+                            humidity: "0%",
+                            windSpeed: "0 km/h",
+                            rainAmount: "0 mm",
+                            collectedwater: "0 L"
+                        )
+                        
+                        VStack(spacing: 25) {
+                            weatherTab(title: "Stationsname", icon: "building.2.fill", content: currentStation.Name)
+                            weatherTab(title: "Aktuelle Temperatur", icon: "thermometer.sun.fill", content: currentStation.temperature)
+                            weatherTab(title: "Luftfeuchtigkeit", icon: "humidity.fill", content: currentStation.humidity)
+                            weatherTab(title: "Windgeschwindigkeit", icon: "wind", content: currentStation.windSpeed)
+                            weatherTab(title: "Niederschlag (pro mm)", icon: "cloud.rain.fill", content: currentStation.rainAmount)
+                            weatherTab(title: "Gesammeltes Wasser", icon: "waterbottle.fill", content: currentStation.collectedwater)
                         }
-                        .tabViewStyle(PageTabViewStyle())
+                        .padding()
+                        
+                        if !appSettings.cities.isEmpty {
+                            TabView(selection: $selectedCityIndex) {
+                                ForEach(appSettings.cities.indices, id: \.self) { index in
+                                    ScrollView {
+                                        VStack(spacing: 16) {
+                                            weatherTab(title: "Stadt", icon: "building.2.fill", content: appSettings.cities[index].city)
+                                            weatherTab(title: "Temperatur", icon: "thermometer.sun.fill", content: formatTemperature(appSettings.cities[index].temperature))
+                                            weatherTab(title: "Luftfeuchtigkeit", icon: "humidity.fill", content: appSettings.cities[index].humidity)
+                                            weatherTab(title: "Windgeschwindigkeit", icon: "wind", content: appSettings.cities[index].windSpeed)
+                                            weatherTab(title: "Niederschlag", icon: "cloud.rain.fill", content: appSettings.cities[index].rainAmount)
+                                        }
+                                        .padding()
+                                    }
+                                    .tag(index)
+                                }
+                            }
+                            .tabViewStyle(PageTabViewStyle())
+                        } else {
+                            Text("Keine Städte hinzugefügt.")
+                        }
                     }
                 }
-            }
+              }
             .navigationTitle("Wetterübersicht")
             .navigationBarItems(
                 leading: Button(action: { showSettings = true }) {
@@ -235,7 +221,7 @@ struct ContentView: View {
                         .foregroundColor(.black)
                 }
                     .sheet(isPresented: $showAddCityView) {
-                        AddCityView(cities: $appSettings.cities)
+                        AddCityView(citieindex: $appSettings.cities, WeatherStation: .constant([]))
                     }
             )
             .alert("Kleiner Hinweis", isPresented: $showAlert) {
@@ -249,7 +235,6 @@ struct ContentView: View {
         }
     }
     
-    // Hier ist die weatherTab-Funktion definiert
     private func weatherTab(title: String, icon: String, content: String) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 12)
@@ -281,4 +266,69 @@ struct ContentView: View {
             return "\(fahrenheit)°F"
         }
     }
-} 
+}
+struct SettingsView: View {
+    @EnvironmentObject var appSettings: AppSettings
+    @Environment(\.dismiss) var dismiss
+    @State private var name: String = ""
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("Personalisierung")) {
+                    NavigationLink(destination: AccentColorSelectionView()) {
+                        Text("Akzentfarbe ändern")
+                            .font(.body) 
+                            .foregroundColor(.accentColor)
+                    }
+
+                    
+                    Picker("Einheit", selection: $appSettings.temperatureUnit) {
+                        Text("Celsius").tag("Celsius")
+                        Text("Fahrenheit").tag("Fahrenheit")
+                    }
+                }
+                Section(header: Text("Wetterstation")) {
+                    HStack {
+                        Text("Akkustand")
+                        Spacer()
+                        Text("87%").foregroundColor(.secondary)
+                    }
+                    HStack {
+                        Text("Update Status")
+                        Spacer()
+                        Text("Kein Update verfügbar 😀").foregroundColor(.secondary)
+                    }
+                    HStack {
+                        Text("Stationsname")
+                        TextField("Name eingeben", text: $appSettings.stationname)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                    }
+                }
+                
+                if !appSettings.cities.isEmpty {
+                    Section(header: Text("Hauptstadt")) {
+                        Picker("Hauptstadt", selection: $appSettings.capitalCity) {
+                            ForEach(appSettings.cities, id: \.id) { city in
+                                Text(city.city).tag(city.city as String?)
+                            }
+                        }
+                    }
+                }
+                
+                Section(header: Text("Info")) {
+                    Text("Version: 1.0.0 Beta")
+                    Text("Entwickler: Weatherstation Company 🌦️")
+                }
+            }
+            .navigationTitle("Einstellungen")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Schließen") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
