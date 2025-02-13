@@ -1,2 +1,4 @@
 # weather-company-swift
-Note: This is a school project!
+
+HydroWeather is a weather wich is completly written in Swift and SwiftUI. 
+
